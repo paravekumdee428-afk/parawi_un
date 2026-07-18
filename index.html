@@ -1,337 +1,59 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IR & LDR Sensor IoT Dashboard</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        body {
-            font-family: 'Inter', 'Chakra Petch', sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+<div>Teachable Machine Image Model</div>
+<button type="button" onclick="init()">Start</button>
+<div id="webcam-container"></div>
+<div id="label-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script type="text/javascript">
+    // More API functions here:
+    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+
+    // the link to your model provided by Teachable Machine export panel
+    const URL = "./my_model/";
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    // Load the image model and setup the webcam
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        // load the model and metadata
+        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+        // or files from your local hard drive
+        // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Convenience function to setup a webcam
+        const flip = true; // whether to flip the webcam
+        webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append elements to the DOM
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
         }
-        .glow-green { text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
-        .glow-red { text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
+    }
 
-    <!-- Header Section -->
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-microchip text-xl text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        IoT Sensor Monitoring <span class="text-xs bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full font-normal">Live</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">ระบบติดตามและบันทึกค่าเซนเซอร์ IR และ LDR</p>
-                </div>
-            </div>
-            
-            <!-- Interval Status Trigger -->
-            <div class="flex items-center gap-4 bg-slate-900 border border-slate-800 px-4 py-2 rounded-2xl">
-                <div class="text-right">
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">อัปเดตถัดไปใน</p>
-                    <p id="countdown-timer" class="text-lg font-mono font-bold text-cyan-400">03:00</p>
-                </div>
-                <div class="h-8 w-[1px] bg-slate-800"></div>
-                <button onclick="triggerFetchData()" class="bg-slate-800 hover:bg-indigo-600 text-white p-2.5 rounded-xl transition-all duration-200 cursor-pointer group" title="รีเฟรชข้อมูลตอนนี้">
-                    <i id="refresh-icon" class="fa-solid fa-arrows-rotate group-hover:rotate-180 transition-transform duration-500"></i>
-                </button>
-            </div>
-        </div>
-    </header>
+    async function loop() {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
 
-    <!-- Main Content Grid -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
-        
-        <!-- Top row: Status cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Card 1: IR Sensor Status -->
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-xl">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                <div class="flex justify-between items-start mb-4">
-                    <div class="space-y-1">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">IR Sensor</span>
-                        <h2 class="text-sm text-slate-400">เซนเซอร์ตรวจจับวัตถุอินฟราเรด</h2>
-                    </div>
-                    <span class="bg-red-500/10 text-red-400 p-2.5 rounded-2xl"><i class="fa-solid fa-eye text-lg"></i></span>
-                </div>
-                <div class="flex items-baseline gap-2 mt-6">
-                    <div id="ir-status-box" class="flex items-center gap-3 bg-slate-950/50 border border-slate-800 px-4 py-3 rounded-2xl w-full">
-                        <span id="ir-indicator" class="w-3.5 h-3.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_12px_#22c55e]"></span>
-                        <span id="ir-text" class="text-xl font-bold font-mono text-green-400 uppercase tracking-wide">Clear</span>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500 mt-4"><i class="fa-solid fa-clock mr-1"></i> ตรวจสอบสถานะล่าสุด: <span id="ir-time" class="font-mono">--:--:--</span></p>
-            </div>
-
-            <!-- Card 2: LDR Sensor Status -->
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden shadow-xl">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                <div class="flex justify-between items-start mb-4">
-                    <div class="space-y-1">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">LDR Sensor</span>
-                        <h2 class="text-sm text-slate-400">ความเข้มแสงโดยรอบ (Light)</h2>
-                    </div>
-                    <span class="bg-amber-500/10 text-amber-400 p-2.5 rounded-2xl"><i class="fa-solid fa-sun text-lg"></i></span>
-                </div>
-                <div class="mt-4">
-                    <div class="flex justify-between items-baseline mb-2">
-                        <span id="ldr-value" class="text-4xl font-extrabold font-mono text-white tracking-tight">72%</span>
-                        <span class="text-xs text-slate-400 font-mono" id="ldr-lux">~540 Lux</span>
-                    </div>
-                    <!-- Progress bar -->
-                    <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
-                        <div id="ldr-progress" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-2.5 rounded-full transition-all duration-1000" style="width: 72%"></div>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500 mt-4"><i class="fa-solid fa-clock mr-1"></i> อ่านค่าล่าสุดเมื่อ: <span id="ldr-time" class="font-mono">--:--:--</span></p>
-            </div>
-
-            <!-- Card 3: Overview System Analytics -->
-            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between md:col-span-2 lg:col-span-1">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">System Stats</span>
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-                </div>
-                <div class="grid grid-cols-2 gap-4 my-4">
-                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/60">
-                        <span class="text-[11px] text-slate-500 block">จำนวน Log ทั้งหมด</span>
-                        <span id="stat-total-logs" class="text-xl font-bold font-mono text-white">0</span>
-                    </div>
-                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/60">
-                        <span class="text-[11px] text-slate-500 block">Uptime ระบบ</span>
-                        <span id="stat-uptime" class="text-xl font-bold font-mono text-indigo-400">0m</span>
-                    </div>
-                </div>
-                <div class="text-xs bg-slate-950/40 p-3 rounded-xl border border-slate-800/40 flex items-center gap-2 text-slate-400">
-                    <i class="fa-solid fa-circle-info text-cyan-400"></i>
-                    <span>ระบบจะทำการกวาดข้อมูลจากเซนเซอร์อัตโนมัติในทุกๆ 3 นาทีเพื่อประหยัดพลังงานบอร์ด</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- History Log Table Section -->
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-            <div class="px-6 py-5 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-clock-history text-slate-400"></i> ประวัติการบันทึกข้อมูล (Every 3 Mins Log)
-                    </h3>
-                    <p class="text-xs text-slate-400">แสดงตารางข้อมูลที่บันทึกอัตโนมัติเรียงตามเวลาล่าสุด</p>
-                </div>
-                <button onclick="clearLogs()" class="text-xs bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 px-3 py-1.5 rounded-xl border border-slate-700 hover:border-rose-500/30 transition-all cursor-pointer">
-                    <i class="fa-solid fa-trash-can mr-1"></i> ล้างประวัติทั้งหมด
-                </button>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-950 text-slate-400 text-xs font-semibold uppercase border-b border-slate-800">
-                            <th class="px-6 py-3.5 font-mono">#</th>
-                            <th class="px-6 py-3.5"><i class="fa-solid fa-calendar mr-1"></i> เวลาบันทึก</th>
-                            <th class="px-6 py-3.5"><i class="fa-solid Eye icon mr-1"></i> สถานะ IR Sensor</th>
-                            <th class="px-6 py-3.5"><i class="fa-solid fa-sun mr-1"></i> ค่า LDR (ความเข้มแสง)</th>
-                            <th class="px-6 py-3.5 text-right">สถานะระบบ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="log-table-body" class="divide-y divide-slate-800/50 text-sm">
-                        <!-- Dynamic content injected here -->
-                        <tr id="empty-row">
-                            <td colspan="5" class="px-6 py-10 text-center text-slate-500 italic">
-                                <i class="fa-solid fa-database block text-2xl mb-2 text-slate-600"></i>
-                                ยังไม่มีข้อมูลบันทึก ระบบกำลังเริ่มนับเวลาถอยหลัง...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500 mt-auto">
-        <p>© 2026 Smart IoT Dashboard System. Adaptive UI Collaboration.</p>
-    </footer>
-
-    <!-- Logic Script -->
-    <script>
-        // กำหนดเวลาสำหรับการ Loop (3 นาที = 180 วินาที)
-        const INTERVAL_SECONDS = 180; 
-        let timeRemaining = INTERVAL_SECONDS;
-        let countdownInterval;
-        let logCounter = 0;
-        let sysUptimeMins = 0;
-
-        // ฟังก์ชันเมื่อเปิดหน้าจอขึ้นมาครั้งแรก
-        window.onload = function() {
-            triggerFetchData(); // ดึงข้อมูลทันทีในวินาทีแรก
-            startCountdown();   // เริ่มต้นนับถอยหลัง 3 นาที
-            
-            // วงลูปจับเวลา Uptime ของระบบบนหน้าจอ
-            setInterval(() => {
-                sysUptimeMins++;
-                document.getElementById('stat-uptime').innerText = sysUptimeMins + 'm';
-            }, 60000);
-        };
-
-        // ฟังก์ชันระบบนับเวลาถอยหลัง
-        function startCountdown() {
-            clearInterval(countdownInterval);
-            timeRemaining = INTERVAL_SECONDS;
-            
-            countdownInterval = setInterval(() => {
-                timeRemaining--;
-                
-                // คำนวณ นาที และ วินาที
-                let minutes = Math.floor(timeRemaining / 60);
-                let seconds = timeRemaining % 60;
-                
-                // รูปแบบแสดงผลดิจิทัล 2 หลัก
-                minutes = minutes < 10 ? '0' + minutes : minutes;
-                seconds = seconds < 10 ? '0' + seconds : seconds;
-                
-                document.getElementById('countdown-timer').innerText = `${minutes}:${seconds}`;
-                
-                // เมื่อครบรอบ 3 นาที (เวลาเหลือ 0)
-                if (timeRemaining <= 0) {
-                    triggerFetchData(); // เรียกทำงานดึงข้อมูลใหม่
-                    timeRemaining = INTERVAL_SECONDS; // รีเซ็ตตัวนับถอยหลังกลับไป 3 นาทีใหม่
-                }
-            }, 1000);
+    // run the webcam image through the image model
+    async function predict() {
+        // predict can take in an image, video or canvas html element
+        const prediction = await model.predict(webcam.canvas);
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
         }
-
-        // ฟังก์ชันการจำลองดึงค่าหรือการสั่งงานประมวลผลเซนเซอร์ (Trigger Action ทุกๆ 3 นาที)
-        function triggerFetchData() {
-            const refreshIcon = document.getElementById('refresh-icon');
-            refreshIcon.classList.add('fa-spin'); // เริ่มสปินไอคอนรีเฟรชขณะประมวลผล
-            
-            // จำลองการเรียก API หรืออ่านค่า Hardware (ในที่นี้สุ่มค่าขึ้นมาเสมือนทำงานจริง)
-            setTimeout(() => {
-                const now = new Date();
-                const timeString = now.toTimeString().split(' ')[0];
-                
-                // 1. สุ่มจำลองสถานะ IR (0 = มีวัตถุบังขวาง, 1 = ทางสะดวก)
-                const irStatus = Math.random() > 0.3 ? "CLEAR" : "BLOCKED"; 
-                
-                // 2. สุ่มจำลองค่าแสง LDR (0% - 100%)
-                const ldrPercent = Math.floor(Math.random() * 101); 
-                const luxApprox = Math.floor(ldrPercent * 7.5);
-
-                // นำค่าไปอัปเดตบนหน้าจอ UI
-                updateUI(irStatus, ldrPercent, luxApprox, timeString);
-                
-                // บันทึกข้อมูลลงในตารางประวัติ (Log)
-                addNewLog(timeString, irStatus, ldrPercent, luxApprox);
-
-                // หยุดหมุนไอคอนรีเฟรช
-                refreshIcon.classList.remove('fa-spin');
-                
-                // หากผู้ใช้กดแมนนวลให้เริ่มนับถอยหลัง 3 นาทีของรอบนั้นใหม่
-                startCountdown();
-                
-            }, 800); // ดีเลย์เอฟเฟกต์ประมวลผล 0.8 วินาทีให้เห็นความลื่นไหลของ UI
-        }
-
-        // ฟังก์ชันการนำข้อมูลไปพ่นลงบน Element Card ของ UI
-        function updateUI(ir, ldr, lux, time) {
-            // อัปเดตการแสดงผล IR Card
-            const irIndicator = document.getElementById('ir-indicator');
-            const irText = document.getElementById('ir-text');
-            const irBox = document.getElementById('ir-status-box');
-            
-            if (ir === "CLEAR") {
-                irIndicator.className = "w-3.5 h-3.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_12px_#22c55e]";
-                irText.className = "text-xl font-bold font-mono text-green-400 uppercase tracking-wide";
-                irText.innerText = "Clear (ปกติ)";
-                irBox.className = "flex items-center gap-3 bg-slate-950/50 border border-emerald-900/40 px-4 py-3 rounded-2xl w-full";
-            } else {
-                irIndicator.className = "w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_#ef4444]";
-                irText.className = "text-xl font-bold font-mono text-red-400 uppercase tracking-wide";
-                irText.innerText = "Object Detected";
-                irBox.className = "flex items-center gap-3 bg-slate-950/50 border border-rose-900/40 px-4 py-3 rounded-2xl w-full";
-            }
-            document.getElementById('ir-time').innerText = time;
-
-            // อัปเดตการแสดงผล LDR Card
-            document.getElementById('ldr-value').innerText = ldr + '%';
-            document.getElementById('ldr-lux').innerText = `~${lux} Lux`;
-            document.getElementById('ldr-progress').style.width = ldr + '%';
-            document.getElementById('ldr-time').innerText = time;
-        }
-
-        // ฟังก์ชันเพิ่มแถวประวัติในตารางอัตโนมัติ
-        function addNewLog(time, ir, ldr, lux) {
-            const tableBody = document.getElementById('log-table-body');
-            const emptyRow = document.getElementById('empty-row');
-            
-            if (emptyRow) {
-                emptyRow.remove(); // ลบแถว "ไม่มีข้อมูล" ออกไป
-            }
-
-            logCounter++;
-            document.getElementById('stat-total-logs').innerText = logCounter;
-
-            // สไตล์สถานะ IR ในตาราง
-            const irBadge = ir === "CLEAR" 
-                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`
-                : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>พบวัตถุขวาง</span>`;
-
-            // สไตล์ระดับแสง LDR ในตาราง
-            let ldrLevel = "text-slate-300";
-            if (ldr > 70) ldrLevel = "text-amber-400 font-semibold";
-            else if (ldr < 30) ldrLevel = "text-indigo-300";
-
-            const newRow = document.createElement('tr');
-            newRow.className = "hover:bg-slate-800/30 transition-colors border-b border-slate-800/40";
-            newRow.innerHTML = `
-                <td class="px-6 py-3.5 font-mono text-xs text-slate-500">${logCounter}</td>
-                <td class="px-6 py-3.5 font-mono text-slate-300">${time}</td>
-                <td class="px-6 py-3.5">${irBadge}</td>
-                <td class="px-6 py-3.5">
-                    <div class="flex items-center gap-2">
-                        <span class="${ldrLevel}">${ldr}%</span>
-                        <span class="text-xs text-slate-500 font-mono">(${lux} lx)</span>
-                    </div>
-                </td>
-                <td class="px-6 py-3.5 text-right text-xs"><span class="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md"><i class="fa-solid fa-check mr-1"></i>Saved</span></td>
-            `;
-
-            // แทรกลงแถวแรกสุด (บนสุดของตารางเพื่อให้เห็นประวัติล่าสุดตลอดเวลา)
-            tableBody.insertBefore(newRow, tableBody.firstChild);
-        }
-
-        // ฟังก์ชันล้างประวัติตาราง
-        function clearLogs() {
-            if (confirm("คุณต้องการล้างประวัติการบันทึกข้อมูลทั้งหมดใช่หรือไม่?")) {
-                const tableBody = document.getElementById('log-table-body');
-                tableBody.innerHTML = `
-                    <tr id="empty-row">
-                        <td colspan="5" class="px-6 py-10 text-center text-slate-500 italic">
-                            <i class="fa-solid fa-database block text-2xl mb-2 text-slate-600"></i>
-                            ยังไม่มีข้อมูลบันทึก ระบบกำลังเริ่มนับเวลาถอยหลัง...
-                        </td>
-                    </tr>
-                `;
-                logCounter = 0;
-                document.getElementById('stat-total-logs').innerText = logCounter;
-            }
-        }
-    </script>
-</body>
-</html>
+    }
+</script>
