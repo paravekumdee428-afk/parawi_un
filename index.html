@@ -98,15 +98,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script type="text/javascript">
+        // ลิงก์โมเดลจากโค้ดเดิมของคุณ
         const URL = "https://teachablemachine.withgoogle.com/models/35rqnpNe-e/";
         let model, webcam, labelContainer, maxPredictions;
         
-        // ตัวแปรสำหรับระบบ Timer 3 นาที (180 วินาที)
+        // ตัวแปรตั้งค่าระบบการทำงานทุกๆ 3 นาที (180 วินาที)
         const INTERVAL_TIME = 180; 
         let timeLeft = INTERVAL_TIME;
         let timerInterval = null;
 
-        // ฟังก์ชันเขียน Log ลงหน้าจอ
+        // ฟังก์ชันบันทึกเหตุการณ์ลงกล่อง Log หน้าจอ
         function logMessage(message) {
             const logBox = document.getElementById("log-container");
             const time = new Date().toLocaleTimeString();
@@ -114,8 +115,9 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
+        // โหลดโมเดลและจัดการสตรีมเว็บแคม[cite: 2]
         async function init() {
-            // ปรับแต่ง UI เมื่อกดเริ่ม
+            // อัปเดตสถานะปุ่มขณะกำลังดาวน์โหลดโมเดล
             document.getElementById("btn-start").disabled = true;
             document.getElementById("btn-start").innerHTML = `
                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -124,27 +126,28 @@
                 </svg> Loading Model...`;
 
             try {
-                const modelURL = URL + "model.json";
-                const metadataURL = URL + "metadata.json";
+                const modelURL = URL + "model.json";[cite: 2]
+                const metadataURL = URL + "metadata.json";[cite: 2]
 
-                model = await tmImage.load(modelURL, metadataURL);
-                maxPredictions = model.getTotalClasses();
+                // โหลดโครงสร้างโมเดล[cite: 2]
+                model = await tmImage.load(modelURL, metadataURL);[cite: 2]
+                maxPredictions = model.getTotalClasses();[cite: 2]
 
-                // ตั้งค่าเว็บแคม (ปรับขนาดให้เต็มกรอบแสดงผล)
-                const flip = true; 
-                webcam = new tmImage.Webcam(400, 300, flip); 
-                await webcam.setup(); 
-                await webcam.play();
+                // ตั้งค่าเว็บแคมขนาด Responsive[cite: 2]
+                const flip = true;[cite: 2]
+                webcam = new tmImage.Webcam(400, 300, flip);[cite: 2]
+                await webcam.setup();[cite: 2]
+                await webcam.play();[cite: 2]
                 
-                // ซ่อน Placeholder และใส่เบราว์เซอร์กล้อง
+                // สลับ Element แสดงผลในส่วนของกล้อง
                 document.getElementById("webcam-placeholder").classList.add("hidden");
-                document.getElementById("webcam-container").appendChild(webcam.canvas);
+                document.getElementById("webcam-container").appendChild(webcam.canvas);[cite: 2]
                 
-                // เคลียร์ค่า Container ของผลลัพธ์เดิมแล้วสร้างโครงสร้าง Progress Bar ใหม่
-                labelContainer = document.getElementById("label-container");
+                // สร้าง Component รูปแบบ Progress Bar สวยงามแทนตัวหนังสือเดิม
+                labelContainer = document.getElementById("label-container");[cite: 2]
                 labelContainer.innerHTML = "";
                 
-                for (let i = 0; i < maxPredictions; i++) {
+                for (let i = 0; i < maxPredictions; i++) {[cite: 2]
                     const labelWrapper = document.createElement("div");
                     labelWrapper.className = "bg-slate-900/60 p-3 rounded-xl border border-slate-700/40";
                     labelWrapper.innerHTML = `
@@ -156,58 +159,58 @@
                             <div class="bg-indigo-500 h-full w-0 class-bar transition-all duration-300"></div>
                         </div>
                     `;
-                    labelContainer.appendChild(labelWrapper);
+                    labelContainer.appendChild(labelWrapper);[cite: 2]
                 }
 
-                // เปลี่ยนสถานะและปุ่ม
+                // เปลี่ยนแปลงหน้าตาแผงควบคุมระบบเมื่อพร้อมรัน
                 document.getElementById("status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
                 document.getElementById("status-badge").innerText = "System: Active";
                 document.getElementById("btn-start").className = "mt-6 w-full max-w-[400px] bg-slate-800 text-slate-500 font-medium py-3 px-6 rounded-xl cursor-not-allowed text-center";
                 document.getElementById("btn-start").innerText = "System Running";
 
-                // เริ่มลูปอัปเดตหน้าจอหลัก (สำหรับตัวกล้อง)
-                window.requestAnimationFrame(loop);
+                // สั่งรันลูปสำหรับการวาดภาพเว็บแคมให้ขยับได้ลื่นไหล[cite: 2]
+                window.requestAnimationFrame(loop);[cite: 2]
                 
-                // เริ่มรันฟังก์ชันทำนายผลทันทีในครั้งแรก และเปิดระบบจับเวลา 3 นาที
+                // สั่งรันวิเคราะห์ครั้งแรกทันทีตอนเปิดระบบ และเริ่มเปิดระบบนับถอยหลัง 3 นาที
                 logMessage("System initialized successfully.");
                 runPredictionCycle();
                 startTimer();
                 
-                // แสดงผลส่วนของ Timer
                 document.getElementById("timer-container").classList.remove("hidden");
 
             } catch (error) {
                 console.error(error);
                 logMessage("Error starting system: " + error.message);
-                alert("ไม่สามารถเปิดกล้องหรือโหลด Model ได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้องถ่ายภาพ");
+                alert("ไม่สามารถเปิดกล้องหรือโหลด Model ได้ กรุณาตรวจสอบสิทธิ์กล้องถ่ายภาพ");
             }
         }
 
+        // ลูปดึงเฟรมจากเว็บแคม (แยกส่วนกับการวิเคราะห์ผลเพื่อความลื่นไหล)[cite: 2]
         async function loop() {
-            webcam.update(); // อัปเดตเฟรมภาพจากเว็บแคมตลอดเวลาเพื่อให้ภาพเคลื่อนไหว
-            window.requestAnimationFrame(loop);
+            webcam.update();[cite: 2]
+            window.requestAnimationFrame(loop);[cite: 2]
         }
 
-        // ฟังก์ชันแกนหลัก: วิเคราะห์ผลภาพถ่าย ณ เสี้ยววินาทีนั้น
+        // ฟังก์ชันหลักที่เอาไว้ตรวจสอบรูปภาพจากเว็บแคม ณ เสี้ยววินาทีนั้น[cite: 2]
         async function predict() {
             if (!model || !webcam) return;
             
-            const prediction = await model.predict(webcam.canvas);
+            const prediction = await model.predict(webcam.canvas);[cite: 2]
             const wrappers = labelContainer.childNodes;
             
-            for (let i = 0; i < maxPredictions; i++) {
-                const className = prediction[i].className;
-                const probability = prediction[i].probability;
+            for (let i = 0; i < maxPredictions; i++) {[cite: 2]
+                const className = prediction[i].className;[cite: 2]
+                const probability = prediction[i].probability;[cite: 2]
                 const percentage = (probability * 100).toFixed(1);
                 
-                // อัปเดตข้อมูลลง UI Components ที่สร้างไว้
+                // แสดงชื่อและ % ความแม่นยำลงบน UI
                 wrappers[i].querySelector(".class-name").innerText = className;
                 wrappers[i].querySelector(".class-percentage").innerText = `${percentage}%`;
                 
                 const progressBar = wrappers[i].querySelector(".class-bar");
                 progressBar.style.width = `${percentage}%`;
                 
-                // เปลี่ยนสี Bar ตามความมั่นใจ (Confidence)
+                // เล่นเฉดสีตามระดับความน่าจะเป็น (Confidence Level)
                 if (probability > 0.7) {
                     progressBar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300";
                 } else if (probability > 0.4) {
@@ -218,14 +221,14 @@
             }
         }
 
-        // ฟังก์ชันจัดการรอบการทำงานและ Log
+        // จัดการรอบการทำงานของการทำนายภาพและเขียน Event Log
         async function runPredictionCycle() {
             logMessage("Executing image analysis...");
             await predict();
-            logMessage("Analysis complete. Result updated.");
+            logMessage("Analysis complete. Results updated.");
         }
 
-        // ระบบนับถอยหลังและการทำงานทุกๆ 3 นาที
+        // ระบบจับเวลาและแถบ Progress บาร์นับถอยหลัง 3 นาที
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             
@@ -235,21 +238,21 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 
-                // คำนวณเวลาแสดงผล mm:ss
+                // รูปแบบเวลาสำหรับนาฬิกานับถอยหลัง mm:ss
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
                 timerText.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                // คำนวณความยาวของหลอด Progress Bar สีม่วง-ฟ้า
+                // ปรับความยาวของหลอดเวลา
                 const percentageLeft = (timeLeft / INTERVAL_TIME) * 100;
                 timerBar.style.width = `${percentageLeft}%`;
                 
-                // เมื่อครบ 3 นาที (0 วินาที)
+                // เมื่อวนครบรอบ 3 นาทีพอดี (0 วินาที)
                 if (timeLeft <= 0) {
-                    runPredictionCycle(); // สั่งวิเคราะห์ภาพใหม่
-                    timeLeft = INTERVAL_TIME; // รีเซ็ตเวลากลับไปที่ 3 นาทีใหม่
+                    runPredictionCycle(); // สั่งยิงภาพไปตรวจสอบ
+                    timeLeft = INTERVAL_TIME; // เริ่มนับ 3 นาทีรอบถัดไป
                 }
-            }, 1000); // ทำงานทุกๆ 1 วินาทีเพื่ออัปเดตหน้าปัดนาฬิกา
+            }, 1000); // อัปเดตหน้าจอนาฬิกาทุกๆ 1 วินาที
         }
     </script>
 </body>
