@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine AI Dashboard (Camera Fixed)</title>
+    <title>AI Image Classifier Dashboard</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Google Fonts & FontAwesome -->
+    <!-- Google Fonts & FontAwesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -19,7 +19,7 @@
             color: #f1f5f9;
         }
         #webcam-video {
-            transform: scaleX(-1); /* กลับด้านกระจกให้ดูเป็นธรรมชาติ */
+            transform: scaleX(-1); /* โหมดกระจกเงาสะท้อนเพื่อความเป็นธรรมชาติ */
             object-fit: cover;
             width: 100%;
             height: 100%;
@@ -28,102 +28,105 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Header หน้าจอ -->
+    <!-- Header Section -->
     <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-6 py-4 sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-brain text-xl text-white"></i>
+                    <i class="fa-solid fa-camera-retro text-xl text-white"></i>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        Teachable Machine Vision <span id="system-badge" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-normal">Inactive</span>
+                        AI Image Recognition <span id="system-badge" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-normal">Inactive</span>
                     </h1>
-                    <p class="text-xs text-slate-400">ระบบวิเคราะห์ภาพอัตโนมัติ ทุกๆ 3 นาที</p>
+                    <p class="text-xs text-slate-400">ระบบสแกนวัตถุจากกล้องอัตโนมัติ ทุกๆ 3 นาที</p>
                 </div>
             </div>
             
-            <!-- ตัวนับเวลาถอยหลัง 3 นาที -->
+            <!-- Countdown Timer Block -->
             <div class="flex items-center gap-4 bg-slate-950 border border-slate-800 px-4 py-2 rounded-2xl">
                 <div class="text-right">
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">วิเคราะห์รอบถัดไปใน</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">วิเคราะห์ภาพถัดไปใน</p>
                     <p id="countdown-timer" class="text-xl font-mono font-bold text-slate-500">03:00</p>
                 </div>
                 <div class="h-8 w-[1px] bg-slate-800"></div>
-                <button onclick="triggerManualPredict()" id="btn-predict-now" disabled class="bg-slate-900 text-slate-700 p-2.5 rounded-xl transition-all duration-200 cursor-not-allowed" title="ต้องกดเริ่มระบบก่อน">
+                <button onclick="triggerManualPredict()" id="btn-predict-now" disabled class="bg-slate-900 text-slate-700 p-2.5 rounded-xl transition-all duration-200 cursor-not-allowed" title="กรุณาเปิดกล้องก่อน">
                     <i id="refresh-icon" class="fa-solid fa-bolt"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- แถบเตือนภัยกรณีระบบมีปัญหาเกี่ยวกับเว็บแคม -->
+        <!-- Error Status Alert Box -->
         <div id="error-alert" class="hidden bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl flex items-start gap-3">
-            <i class="fa-solid fa-triangle-exclamation text-xl mt-0.5 flex-shrink-0"></i>
+            <i class="fa-solid fa-circle-exclamation text-xl mt-0.5 flex-shrink-0"></i>
             <div>
-                <h4 class="font-bold text-sm">ไม่สามารถเข้าถึงกล้องถ่ายภาพได้!</h4>
+                <h4 class="font-bold text-sm">เบราว์เซอร์บล็อกการเข้าถึงกล้องถ่ายภาพ!</h4>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    โปรดตรวจสอบว่าได้กดปุ่ม <strong>"อนุญาต (Allow)"</strong> ให้เว็บไซต์เข้าใช้งานกล้องในบราวเซอร์ของคุณแล้ว หรือหากรันไฟล์บนเครื่องโดยตรง แนะนำให้เปิดผ่านโปรแกรมจำลองเซิร์ฟเวอร์ เช่น Live Server ใน VS Code ครับ
+                    **คำแนะนำเพื่อเปิดกล้อง:** ไม่สามารถคลิกเปิดไฟล์ .html ตรงๆ จากเครื่องได้ เนื่องจากผิดกฎความปลอดภัยพื้นฐานของเบราว์เซอร์ กรุณารันไฟล์ผ่านเซิร์ฟเวอร์จำลอง เช่น โปรแกรม **VS Code (Extension: Live Server)** เพื่อให้เว็บรันภายใต้ `http://localhost` จึงจะเปิดกล้องได้สำเร็จครับ
                 </p>
             </div>
         </div>
         
+        <!-- Dashboard Grid Layout -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <!-- ฝั่งซ้าย: กล้อง Webcam -->
+            
+            <!-- Left Side: Video Camera Feed -->
             <div class="md:col-span-5 bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-xl">
                 <div>
-                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-video mr-1.5 text-indigo-400"></i> Live Webcam Feed</h3>
-                    <div class="relative bg-slate-950 rounded-2xl overflow-hidden aspect-square flex items-center justify-center border border-slate-800" id="webcam-box">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-display mr-1.5 text-indigo-400"></i> กล้องวิดีโอ</h3>
+                    <div class="relative bg-slate-950 rounded-2xl overflow-hidden aspect-square flex items-center justify-center border border-slate-800">
                         <div id="webcam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-950">
-                            <i id="camera-icon" class="fa-solid fa-camera text-4xl text-slate-700 mb-3 animate-pulse"></i>
-                            <p class="text-sm text-slate-400 font-semibold">กล้องยังไม่ทำงาน</p>
-                            <p class="text-xs text-slate-500 mt-1">กดปุ่มด้านล่างเพื่อปลดล็อกสิทธิ์ใช้งานกล้อง</p>
+                            <i id="camera-icon" class="fa-solid fa-video-slash text-4xl text-slate-700 mb-3 animate-pulse"></i>
+                            <p class="text-sm text-slate-400 font-semibold">ปิดใช้งานกล้อง</p>
+                            <p class="text-xs text-slate-500 mt-1">กดปุ่มด้าน bawah เพื่ออนุมัติและเปิดใช้งานกล้อง</p>
                         </div>
-                        <!-- เปลี่ยนมาใช้ Tag Video ดั้งเดิมเพื่อแก้ปัญหากล้องไม่ติด -->
+                        <!-- ใช้ HTML5 Native Video Tag เพื่อการเปิดติดที่ชัวร์ขึ้น -->
                         <video id="webcam-video" autoplay playsinline muted class="hidden"></video>
                     </div>
                 </div>
 
                 <div class="mt-4">
-                    <button type="button" onclick="init()" id="btn-start" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-video"></i> เปิดกล้องและเชื่อมต่อ AI
+                    <button type="button" onclick="initSystem()" id="btn-start" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-power-off"></i> เปิดใช้งานกล้อง & โหลด AI
                     </button>
                 </div>
             </div>
 
-            <!-- ฝั่งขวา: ผลการวิเคราะห์ปัจจุบัน -->
+            <!-- Right Side: Real-time Analysis Results -->
             <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
                 <div>
                     <div class="flex justify-between items-center mb-4">
                         <div>
-                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-chart-simple mr-1.5 text-indigo-400"></i> AI Prediction Result</h3>
-                            <p class="text-xs text-slate-500">ผลการวิเคราะห์ล่าสุดเมื่อ: <span id="last-update-time" class="font-mono">--:--:--</span></p>
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-square-poll-horizontal mr-1.5 text-indigo-400"></i> ผลการจำแนกภาพล่าสุด</h3>
+                            <p class="text-xs text-slate-500">ประมวลผลล่าสุดเมื่อ: <span id="last-update-time" class="font-mono">--:--:--</span></p>
                         </div>
                         <span id="status-badge" class="bg-slate-950 text-slate-500 border border-slate-800 text-xs px-3 py-1 rounded-full font-mono">Standby</span>
                     </div>
 
+                    <!-- Progress Bars Container -->
                     <div id="label-container" class="space-y-4 my-4">
                         <div class="text-slate-500 text-sm italic py-8 text-center">
-                            รอระบบทำงานเพื่อสแกนภาพวัตถุ...
+                            กรุณากดปุ่มเปิดกล้องเพื่อเริ่มต้นระบบประมวลผลโมเดลภาพ...
                         </div>
                     </div>
                 </div>
 
                 <div class="text-xs bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 flex items-start gap-3 text-slate-400">
-                    <i class="fa-solid fa-circle-info text-cyan-400 mt-0.5"></i>
-                    <p><strong>ระบบอัปเดตอัตโนมัติ:</strong> หน้าจอกล้องจะสตรีมตลอดเวลา ส่วนตัวสมอง AI จะรันประมวลผลทำนายผลลัพธ์และปั๊มบันทึกข้อมูลประวัติให้คุณใน <strong>ทุก ๆ 3 นาทีโดยอัตโนมัติ</strong></p>
+                    <i class="fa-solid fa-info-circle text-cyan-400 mt-0.5"></i>
+                    <p><strong>รอบเวลาประมวลผล:</strong> กล้องจะทำงานค้างไว้เพื่อให้คุณส่องภาพได้แบบ Real-time แต่โมเดลปัญญาประดิษฐ์จะทำการล็อกวิเคราะห์ภาพและเขียนบันทึกประวัติลงตาราง **ทุก ๆ 3 นาที** โดยอัติโนมัติ</p>
                 </div>
             </div>
         </div>
 
-        <!-- ส่วนล่าง: ตารางประวัติ Log -->
+        <!-- History Log Table Component -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
             <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
                 <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-clock-history text-slate-400"></i> ประวัติการบันทึกข้อมูล (Every 3 Mins Log)
+                    <i class="fa-solid fa-list-check text-slate-400"></i> ประวัติความแม่นยำรายรอบ (3-Minute Log Tracker)
                 </h3>
                 <span id="log-count" class="bg-indigo-500/10 text-indigo-400 text-xs px-2.5 py-0.5 rounded-full font-mono">0 Logs</span>
             </div>
@@ -133,16 +136,16 @@
                     <thead>
                         <tr class="bg-slate-950 text-slate-400 text-xs font-semibold uppercase border-b border-slate-800">
                             <th class="px-6 py-3.5 font-mono w-16">#</th>
-                            <th class="px-6 py-3.5 w-40"><i class="fa-solid fa-calendar mr-1"></i> เวลาบันทึก</th>
-                            <th class="px-6 py-3.5"><i class="fa-solid fa-star mr-1"></i> ผลลัพธ์สูงสุด (Top Prediction)</th>
-                            <th class="px-6 py-3.5 text-right w-32">สถานะ</th>
+                            <th class="px-6 py-3.5 w-40"><i class="fa-solid fa-clock mr-1"></i> แสตมป์เวลา</th>
+                            <th class="px-6 py-3.5"><i class="fa-solid fa-award mr-1"></i> วัตถุที่ตรวจพบสูงสุด (Top-Class Score)</th>
+                            <th class="px-6 py-3.5 text-right w-32">ผลบันทึก</th>
                         </tr>
                     </thead>
                     <tbody id="log-table-body" class="divide-y divide-slate-800/50 text-sm">
                         <tr id="empty-row">
                             <td colspan="4" class="px-6 py-10 text-center text-slate-500 italic">
-                                <i class="fa-solid fa-database block text-xl mb-2 text-slate-600"></i>
-                                ยังไม่มีประวัติการบันทึกข้อมูล ระบบจะเริ่มบันทึกเมื่อครบเวลาถอยหลัง
+                                <i class="fa-solid fa-server block text-xl mb-2 text-slate-600"></i>
+                                แฟ้มประวัติว่างเปล่า ระบบจะลงบันทึกแถวแรกเมื่อครบกำหนดเวลา 3 นาที
                             </td>
                         </tr>
                     </tbody>
@@ -151,48 +154,51 @@
         </div>
     </main>
 
+    <!-- Footer Area -->
     <footer class="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500">
-        <p>© 2026 Smart AI Dashboard. Camera Fixed Stability Mode.</p>
+        <p>© 2026 Smart AI Dashboard. Standard Media Stream Camera Mode.</p>
     </footer>
 
-    <!-- TensorFlow.js และ Teachable Machine -->
+    <!-- TensorFlow.js & Teachable Machine Scripts โหลดออนไลน์จาก CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     
     <script type="text/javascript">
-        // สามารถเปลี่ยนลิงก์ตรงนี้ให้เป็นโมเดลของคุณได้ครับ
+        // วางลิงก์โมเดล Teachable Machine ของคุณในเครื่องหมายคำพูดด้านล่างนี้ครับ
         const URL = "https://teachablemachine.withgoogle.com/models/bPg16Yfub/"; 
 
         let model, maxPredictions;
         let videoElement = document.getElementById("webcam-video");
         let countdownInterval;
-        const INTERVAL_SECONDS = 180; // ตั้งค่าลูป 3 นาที
+        const INTERVAL_SECONDS = 180; // ลูปเวลา 3 นาที (180 วินาที)
         let timeRemaining = INTERVAL_SECONDS;
         let logCounter = 0;
         let isSystemRunning = false;
 
-        async function init() {
+        // ฟังก์ชันหลักกดเปิดระบบ
+        async function initSystem() {
             document.getElementById("error-alert").classList.add("hidden");
             const btnStart = document.getElementById("btn-start");
-            btnStart.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> กำลังเรียกเปิดกล้องและโหลด AI...`;
+            btnStart.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> กำลังเรียกเปิดกล้องและเชื่อมต่อ AI...`;
             btnStart.disabled = true;
 
             try {
-                // 1. บังคับขอสิทธิ์เบราว์เซอร์เพื่อเปิดกล้องเว็บแคมผ่านระบบฮาร์ดแวร์โดยตรง
+                // 1. คำสั่งบังคับเรียกเปิดสิทธิ์กล้องฮาร์ดแวร์แบบ Native API การันตีการเปิดกล้องสำเร็จ
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { width: 400, height: 400, facingMode: "user" }, 
                     audio: false 
                 });
                 
+                // นำวิดีโอสดผูกเข้ากับแท็ก Video บน HTML เพื่อให้แสดงผลลื่นไหล
                 videoElement.srcObject = stream;
                 videoElement.classList.remove("hidden");
                 document.getElementById("webcam-placeholder").classList.add("hidden");
 
-                // 2. โหลดตัวโมเดล AI Teachable Machine
+                // 2. โหลดไฟล์โครงข่ายประสาทเทียม AI
                 model = await tmImage.load(URL + "model.json", URL + "metadata.json");
                 maxPredictions = model.getTotalClasses();
 
-                // 3. จัดการโครงสร้างแท่ง Progress Bar ฝั่งขวา
+                // 3. จัดแจงหน้าต่างแสดงผลแท่ง Progress Bar คะแนนเปอร์เซ็นต์ความแม่นยำ
                 const labelContainer = document.getElementById("label-container");
                 labelContainer.innerHTML = "";
                 for (let i = 0; i < maxPredictions; i++) {
@@ -200,7 +206,7 @@
                     classBlock.className = "space-y-1";
                     classBlock.innerHTML = `
                         <div class="flex justify-between text-xs font-semibold">
-                            <span class="text-slate-300 class-name-lbl">Loading...</span>
+                            <span class="text-slate-300 class-name-lbl">คำนวณชื่อคลาส...</span>
                             <span class="text-indigo-400 font-mono class-prob-lbl">0.00%</span>
                         </div>
                         <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
@@ -210,9 +216,9 @@
                     labelContainer.appendChild(classBlock);
                 }
 
-                // สั่งรันระบบเสร็จสมบูรณ์
+                // ปรับแต่งการแสดงผล UI เมื่อเปิดกล้องติดสมบูรณ์
                 isSystemRunning = true;
-                btnStart.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> กล้องเปิดใช้งานแล้ว`;
+                btnStart.innerHTML = `<i class="fa-solid fa-video"></i> กล้องเปิดใช้งานอยู่`;
                 
                 document.getElementById("system-badge").className = "text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-normal";
                 document.getElementById("system-badge").innerText = "Active";
@@ -224,20 +230,20 @@
                 btnPredictNow.disabled = false;
                 btnPredictNow.className = "bg-slate-800 hover:bg-indigo-600 text-white p-2.5 rounded-xl transition-all duration-200 cursor-pointer";
 
-                // ทำนายผลรอบแรกสุดทันที และเริ่มจับเวลา 3 นาที
-                await predict();
-                startTimer();
+                // ยิงวิเคราะห์ครั้งแรก และเริ่มระเบิดเวลาถอยหลัง 3 นาที
+                await predictImage();
+                startCountdownTimer();
 
             } catch (err) {
-                console.error("Camera Access Error: ", err);
+                console.error("Camera Access Interrupted: ", err);
                 document.getElementById("error-alert").classList.remove("hidden");
-                btnStart.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> เปิดกล้องไม่สำเร็จ`;
+                btnStart.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> เปิดใช้งานไม่สำเร็จ`;
                 btnStart.disabled = false;
             }
         }
 
-        // ตัวตั้งเวลาถอยหลังอัปเดตทุกๆ 3 นาที
-        function startTimer() {
+        // ตัวคุมวงรอบเวลานับถอยหลัง 3 นาที
+        function startCountdownTimer() {
             clearInterval(countdownInterval);
             timeRemaining = INTERVAL_SECONDS;
 
@@ -251,25 +257,26 @@
 
                 document.getElementById("countdown-timer").innerText = `${minutes}:${seconds}`;
 
+                // เมื่อนาฬิกาตีศูนย์ (ครบ 3 นาที)
                 if (timeRemaining <= 0) {
-                    await predict(); 
-                    timeRemaining = INTERVAL_SECONDS; 
+                    await predictImage(); 
+                    timeRemaining = INTERVAL_SECONDS; // รีเซ็ตรอบเวลากลับไปเริ่มต้นใหม่
                 }
             }, 1000);
         }
 
-        // ฟังก์ชันสั่งทำนายผลแบบเร่งด่วนทันทีเมื่อกดปุ่มสายฟ้า
+        // ปุ่มบังคับทำนายทันที (Manual Bypass)
         async function triggerManualPredict() {
             if (!isSystemRunning) return;
-            await predict(); 
-            startTimer(); // รีเซ็ตเวลากลับไปเริ่ม 3 นาทีใหม่ทันที   
+            await predictImage(); 
+            startCountdownTimer(); // บังคับรีเวลากลับไปเริ่มต้น 3 นาทีใหม่ทันที   
         }
 
-        // สั่งให้ AI ตรวจจับวิเคราะห์ภาพจากแผงกล้องวิดีโอ
-        async function predict() {
+        // ฟังก์ชันสั่งให้ปัญญาประดิษฐ์สแนปช็อตภาพจากวิดีโอไปจำแนกประเภทคลาส
+        async function predictImage() {
             if (!model || !isSystemRunning) return;
 
-            // ส่งข้อมูลภาพจากแท็ก Video เข้าป้อนให้โมเดล AI คำนวณแบบตรงสายงาน
+            // นำส่ง Frame ปัจจุบันของ Tag วิดีโอเข้าไปที่โมเดลของ Teachable Machine
             const prediction = await model.predict(videoElement);
             let topClass = "";
             let topProbability = -1;
@@ -289,18 +296,20 @@
                     classBlock.querySelector(".class-bar").style.width = percentString;
                 }
 
+                // หาค่าเป้าหมายที่มีร้อยละความแม่นยำสูงที่สุดประจำรอบนั้นๆ
                 if (probability > topProbability) {
                     topProbability = probability;
                     topClass = className;
                 }
             }
 
+            // บันทึกสถิติเวลาและประวัติลงในตาราง Logs
             document.getElementById("last-update-time").innerText = timeString;
-            addNewLog(timeString, topClass, (topProbability * 100).toFixed(2));
+            insertNewRowLog(timeString, topClass, (topProbability * 100).toFixed(2));
         }
 
-        // เพิ่มประวัติลงตาราง
-        function addNewLog(time, className, score) {
+        // บันทึกแถวข้อมูลลงในตารางประวัติเบื้องล่าง
+        function insertNewRowLog(time, className, score) {
             const tableBody = document.getElementById('log-table-body');
             const emptyRow = document.getElementById('empty-row');
             
@@ -317,8 +326,9 @@
                 <td class="px-6 py-3.5 font-semibold text-indigo-300">
                     ${className} <span class="text-xs font-mono font-normal text-cyan-400 ml-1">(${score}%)</span>
                 </td>
-                <td class="px-6 py-3.5 text-right text-xs"><span class="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md"><i class="fa-solid fa-bolt mr-1"></i>Predicted</span></td>
+                <td class="px-6 py-3.5 text-right text-xs"><span class="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md"><i class="fa-solid fa-circle-check mr-1"></i>Saved</span></td>
             `;
+            // แทรกลงด้านบนสุดของตาราง เพื่อให้อ่านประวัติล่าสุดได้สะดวกที่สุด
             tableBody.insertBefore(newRow, tableBody.firstChild);
         }
     </script>
