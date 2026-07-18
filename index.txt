@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine AI Dashboard</title>
-    <!-- Tailwind CSS สำหรับการจัดเลย์เอาต์ -->
+    <title>Teachable Machine AI Dashboard (Camera Fixed)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,11 +18,11 @@
             background-color: #0b0f19;
             color: #f1f5f9;
         }
-        #webcam-container canvas {
-            border-radius: 1rem;
-            width: 100% !important;
-            height: auto !important;
-            transform: scaleX(-1); /* กลับด้านกระจกให้เป็นธรรมชาติ */
+        #webcam-video {
+            transform: scaleX(-1); /* กลับด้านกระจกให้ดูเป็นธรรมชาติ */
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -60,15 +60,13 @@
     <!-- Main Content -->
     <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        <!-- แจ้งเตือนข้อผิดพลาด (จะแสดงเมื่อกล้องเปิดไม่ได้) -->
+        <!-- แถบเตือนภัยกรณีระบบมีปัญหาเกี่ยวกับเว็บแคม -->
         <div id="error-alert" class="hidden bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl flex items-start gap-3">
             <i class="fa-solid fa-triangle-exclamation text-xl mt-0.5 flex-shrink-0"></i>
             <div>
-                <h4 class="font-bold text-sm">ไม่สามารถเปิดใช้งานกล้องหรือโหลดโมเดลได้!</h4>
+                <h4 class="font-bold text-sm">ไม่สามารถเข้าถึงกล้องถ่ายภาพได้!</h4>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    1. **ปัญหาจาก HTTPS/Localhost:** เบราว์เซอร์จะบล็อกกล้องหากคุณเปิดไฟล์ HTML ตรงๆ (file:///...) แนะนำให้รันผ่านเซิร์ฟเวอร์จำลอง เช่น VS Code Live Server หรือทดสอบบนเว็บที่เป็น HTTPS<br>
-                    2. **สิทธิ์การเข้าถึงกล้อง:** ตรวจสอบว่าได้กด "อนุญาต (Allow)" ให้เว็บเข้าถึงกล้องแล้วหรือยัง<br>
-                    3. **ตำแหน่งโมเดล:** ตรวจสอบว่าตัวแปร <code class="bg-slate-950 px-1 py-0.5 rounded text-rose-300 font-mono">URL</code> ในโค้ด ชี้ไปยังโฟลเดอร์หรือลิงก์โมเดลที่ถูกต้องแล้ว
+                    โปรดตรวจสอบว่าได้กดปุ่ม <strong>"อนุญาต (Allow)"</strong> ให้เว็บไซต์เข้าใช้งานกล้องในบราวเซอร์ของคุณแล้ว หรือหากรันไฟล์บนเครื่องโดยตรง แนะนำให้เปิดผ่านโปรแกรมจำลองเซิร์ฟเวอร์ เช่น Live Server ใน VS Code ครับ
                 </p>
             </div>
         </div>
@@ -80,22 +78,23 @@
                     <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-video mr-1.5 text-indigo-400"></i> Live Webcam Feed</h3>
                     <div class="relative bg-slate-950 rounded-2xl overflow-hidden aspect-square flex items-center justify-center border border-slate-800" id="webcam-box">
                         <div id="webcam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-950">
-                            <i id="camera-icon" class="fa-solid fa-camera text-4xl text-slate-700 mb-3"></i>
-                            <p class="text-sm text-slate-400 font-semibold">ยังไม่ได้เปิดใช้งานกล้อง</p>
-                            <p class="text-xs text-slate-500 mt-1">กรุณากดปุ่มด้านล่างเพื่อเริ่มการเชื่อมต่อ</p>
+                            <i id="camera-icon" class="fa-solid fa-camera text-4xl text-slate-700 mb-3 animate-pulse"></i>
+                            <p class="text-sm text-slate-400 font-semibold">กล้องยังไม่ทำงาน</p>
+                            <p class="text-xs text-slate-500 mt-1">กดปุ่มด้านล่างเพื่อปลดล็อกสิทธิ์ใช้งานกล้อง</p>
                         </div>
-                        <div id="webcam-container" class="w-full h-full"></div>
+                        <!-- เปลี่ยนมาใช้ Tag Video ดั้งเดิมเพื่อแก้ปัญหากล้องไม่ติด -->
+                        <video id="webcam-video" autoplay playsinline muted class="hidden"></video>
                     </div>
                 </div>
 
                 <div class="mt-4">
                     <button type="button" onclick="init()" id="btn-start" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-power-off"></i> เริ่มต้นระบบ AI และเปิดกล้อง
+                        <i class="fa-solid fa-video"></i> เปิดกล้องและเชื่อมต่อ AI
                     </button>
                 </div>
             </div>
 
-            <!-- ฝั่งขวา: ผลการวิเคราะห์ -->
+            <!-- ฝั่งขวา: ผลการวิเคราะห์ปัจจุบัน -->
             <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl">
                 <div>
                     <div class="flex justify-between items-center mb-4">
@@ -108,19 +107,19 @@
 
                     <div id="label-container" class="space-y-4 my-4">
                         <div class="text-slate-500 text-sm italic py-8 text-center">
-                            รอการเปิดใช้งานระบบเพื่อประมวลผลข้อมูล...
+                            รอระบบทำงานเพื่อสแกนภาพวัตถุ...
                         </div>
                     </div>
                 </div>
 
                 <div class="text-xs bg-slate-950/60 p-4 rounded-2xl border border-slate-800/60 flex items-start gap-3 text-slate-400">
                     <i class="fa-solid fa-circle-info text-cyan-400 mt-0.5"></i>
-                    <p><strong>ระบบวิเคราะห์ภาพ:</strong> กล้องจะสตรีมสดอย่างต่อเนื่องเพื่อให้คุณปรับมุมมองได้ราบรื่น แต่ตัว AI จะประมวลผลทำนายและบันทึกประวัติ <strong>ทุกๆ 3 นาทีโดยอัตโนมัติ</strong> เพื่อป้องกันอาการหน่วงช้า</p>
+                    <p><strong>ระบบอัปเดตอัตโนมัติ:</strong> หน้าจอกล้องจะสตรีมตลอดเวลา ส่วนตัวสมอง AI จะรันประมวลผลทำนายผลลัพธ์และปั๊มบันทึกข้อมูลประวัติให้คุณใน <strong>ทุก ๆ 3 นาทีโดยอัตโนมัติ</strong></p>
                 </div>
             </div>
         </div>
 
-        <!-- ส่วนล่าง: ตาราง Log -->
+        <!-- ส่วนล่าง: ตารางประวัติ Log -->
         <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
             <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
                 <h3 class="text-sm font-semibold text-white flex items-center gap-2">
@@ -143,7 +142,7 @@
                         <tr id="empty-row">
                             <td colspan="4" class="px-6 py-10 text-center text-slate-500 italic">
                                 <i class="fa-solid fa-database block text-xl mb-2 text-slate-600"></i>
-                                ยังไม่มีประวัติการบันทึกข้อมูล ระบบจะบันทึกอัตโนมัติเมื่อครบกำหนดเวลา
+                                ยังไม่มีประวัติการบันทึกข้อมูล ระบบจะเริ่มบันทึกเมื่อครบเวลาถอยหลัง
                             </td>
                         </tr>
                     </tbody>
@@ -153,55 +152,48 @@
     </main>
 
     <footer class="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500">
-        <p>© 2026 Smart AI Dashboard. Powered by TensorFlow.js</p>
+        <p>© 2026 Smart AI Dashboard. Camera Fixed Stability Mode.</p>
     </footer>
 
-    <!-- TensorFlow.js และ Teachable Machine Scripts ดั้งเดิม -->
+    <!-- TensorFlow.js และ Teachable Machine -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     
     <script type="text/javascript">
-        // เปลี่ยนเป็นลิงก์โมเดลของคุณ เช่น "https://teachablemachine.withgoogle.com/models/XXXXX/" 
-        // หรือโฟลเดอร์โปรเจกต์ภายใน เช่น "./my_model/"
+        // สามารถเปลี่ยนลิงก์ตรงนี้ให้เป็นโมเดลของคุณได้ครับ
         const URL = "https://teachablemachine.withgoogle.com/models/bPg16Yfub/"; 
 
-        let model, webcam, labelContainer, maxPredictions;
+        let model, maxPredictions;
+        let videoElement = document.getElementById("webcam-video");
         let countdownInterval;
-        const INTERVAL_SECONDS = 180; // 3 นาที
+        const INTERVAL_SECONDS = 180; // ตั้งค่าลูป 3 นาที
         let timeRemaining = INTERVAL_SECONDS;
         let logCounter = 0;
         let isSystemRunning = false;
 
         async function init() {
-            // ซ่อนกล่องแจ้งเตือนเก่าก่อน (ถ้ามี)
             document.getElementById("error-alert").classList.add("hidden");
-            
             const btnStart = document.getElementById("btn-start");
-            btnStart.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> กำลังเชื่อมต่อกล้องและโหลดโมเดล...`;
+            btnStart.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> กำลังเรียกเปิดกล้องและโหลด AI...`;
             btnStart.disabled = true;
 
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
-
             try {
-                // 1. โหลดโมเดล AI
-                model = await tmImage.load(modelURL, metadataURL);
+                // 1. บังคับขอสิทธิ์เบราว์เซอร์เพื่อเปิดกล้องเว็บแคมผ่านระบบฮาร์ดแวร์โดยตรง
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 400, height: 400, facingMode: "user" }, 
+                    audio: false 
+                });
+                
+                videoElement.srcObject = stream;
+                videoElement.classList.remove("hidden");
+                document.getElementById("webcam-placeholder").classList.add("hidden");
+
+                // 2. โหลดตัวโมเดล AI Teachable Machine
+                model = await tmImage.load(URL + "model.json", URL + "metadata.json");
                 maxPredictions = model.getTotalClasses();
 
-                // 2. ตั้งค่าและเปิดใช้งานกล้อง WebCam
-                const flip = true; 
-                webcam = new tmImage.Webcam(400, 400, flip); 
-                
-                // คำสั่งสำคัญในการเปิดกล้อง (มักจะ Error จุดนี้หากไม่ได้รันบน HTTPS)
-                await webcam.setup(); 
-                await webcam.play();
-                
-                // ล้างภาพ Placeholder ออกเมื่อกล้องเปิดสำเร็จ
-                document.getElementById("webcam-placeholder").classList.add("hidden");
-                document.getElementById("webcam-container").appendChild(webcam.canvas);
-                
-                // สร้างหน้าต่างผลลัพธ์ Progress Bar
-                labelContainer = document.getElementById("label-container");
+                // 3. จัดการโครงสร้างแท่ง Progress Bar ฝั่งขวา
+                const labelContainer = document.getElementById("label-container");
                 labelContainer.innerHTML = "";
                 for (let i = 0; i < maxPredictions; i++) {
                     const classBlock = document.createElement("div");
@@ -212,18 +204,16 @@
                             <span class="text-indigo-400 font-mono class-prob-lbl">0.00%</span>
                         </div>
                         <div class="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
-                            <div class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-2.5 rounded-full transition-all duration-500 class-bar" style="width: 0%"></div>
+                            <div class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-2.5 rounded-full transition-all duration-300 class-bar" style="width: 0%"></div>
                         </div>
                     `;
                     labelContainer.appendChild(classBlock);
                 }
 
-                // เริ่มลูปแสดงผลสตรีมภาพกล้อง
+                // สั่งรันระบบเสร็จสมบูรณ์
                 isSystemRunning = true;
-                window.requestAnimationFrame(webcamLoop);
-
-                // เปลี่ยนแปลงสถานะหน้าจอ
-                btnStart.innerHTML = `<i class="fa-solid fa-check-circle text-emerald-400"></i> ระบบทำงานปกติ`;
+                btnStart.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> กล้องเปิดใช้งานแล้ว`;
+                
                 document.getElementById("system-badge").className = "text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-normal";
                 document.getElementById("system-badge").innerText = "Active";
                 document.getElementById("status-badge").className = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-3 py-1 rounded-full font-mono";
@@ -234,29 +224,19 @@
                 btnPredictNow.disabled = false;
                 btnPredictNow.className = "bg-slate-800 hover:bg-indigo-600 text-white p-2.5 rounded-xl transition-all duration-200 cursor-pointer";
 
-                // ทำนายรอบแรกทันทีและเริ่มเวลานับถอยหลัง 3 นาที
+                // ทำนายผลรอบแรกสุดทันที และเริ่มจับเวลา 3 นาที
                 await predict();
                 startTimer();
 
-            } catch (error) {
-                console.error("Camera/Model Error:", error);
-                
-                // แสดงผลกล่องแจ้งเตือนเมื่อเกิดข้อผิดพลาดในการเปิดกล้อง
+            } catch (err) {
+                console.error("Camera Access Error: ", err);
                 document.getElementById("error-alert").classList.remove("hidden");
-                btnStart.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> เปิดใช้งานไม่สำเร็จ`;
+                btnStart.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> เปิดกล้องไม่สำเร็จ`;
                 btnStart.disabled = false;
-                
-                document.getElementById("camera-icon").className = "fa-solid fa-camera-slash text-4xl text-rose-500 mb-3";
             }
         }
 
-        async function webcamLoop() {
-            if (isSystemRunning) {
-                webcam.update(); 
-                window.requestAnimationFrame(webcamLoop);
-            }
-        }
-
+        // ตัวตั้งเวลาถอยหลังอัปเดตทุกๆ 3 นาที
         function startTimer() {
             clearInterval(countdownInterval);
             timeRemaining = INTERVAL_SECONDS;
@@ -278,28 +258,32 @@
             }, 1000);
         }
 
+        // ฟังก์ชันสั่งทำนายผลแบบเร่งด่วนทันทีเมื่อกดปุ่มสายฟ้า
         async function triggerManualPredict() {
             if (!isSystemRunning) return;
             await predict(); 
-            startTimer();    
+            startTimer(); // รีเซ็ตเวลากลับไปเริ่ม 3 นาทีใหม่ทันที   
         }
 
+        // สั่งให้ AI ตรวจจับวิเคราะห์ภาพจากแผงกล้องวิดีโอ
         async function predict() {
-            if (!model || !webcam) return;
+            if (!model || !isSystemRunning) return;
 
-            const prediction = await model.predict(webcam.canvas);
+            // ส่งข้อมูลภาพจากแท็ก Video เข้าป้อนให้โมเดล AI คำนวณแบบตรงสายงาน
+            const prediction = await model.predict(videoElement);
             let topClass = "";
             let topProbability = -1;
             const now = new Date();
             const timeString = now.toTimeString().split(' ')[0];
 
+            const labelContainer = document.getElementById("label-container");
             for (let i = 0; i < maxPredictions; i++) {
                 const className = prediction[i].className;
                 const probability = prediction[i].probability;
                 const percentString = (probability * 100).toFixed(2) + "%";
 
                 const classBlock = labelContainer.childNodes[i];
-                if(classBlock.querySelector(".class-name-lbl")) {
+                if(classBlock && classBlock.querySelector(".class-name-lbl")) {
                     classBlock.querySelector(".class-name-lbl").innerText = className;
                     classBlock.querySelector(".class-prob-lbl").innerText = percentString;
                     classBlock.querySelector(".class-bar").style.width = percentString;
@@ -315,6 +299,7 @@
             addNewLog(timeString, topClass, (topProbability * 100).toFixed(2));
         }
 
+        // เพิ่มประวัติลงตาราง
         function addNewLog(time, className, score) {
             const tableBody = document.getElementById('log-table-body');
             const emptyRow = document.getElementById('empty-row');
