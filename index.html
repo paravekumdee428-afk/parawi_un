@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine Monitor Dashboard</title>
-    <!-- Tailwind CSS CDN -->
+    <title>AI Computer Vision Dashboard</title>
+    <!-- Tailwind CSS Dynamic CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        /* สไตล์พิเศษเพื่อบังคับให้ Canvas ของ Teachable Machine ขยายเต็มกรอบสวยงาม */
+        #webcam-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+            border-radius: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
@@ -19,8 +26,8 @@
         <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
                 </div>
                 <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">
                     AI Vision Terminal
@@ -41,28 +48,28 @@
                 <span>📷</span> Live Camera Feed
             </h2>
             
-            <!-- Webcam Outer Frame -->
-            <div class="relative w-full aspect-square max-w-[360px] mx-auto bg-slate-950 rounded-xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-inner group">
+            <!-- Webcam Outer Frame (รองรับสัดส่วนกล้องสี่เหลี่ยมจัตุรัสตามโครงสร้างโมเดล) -->
+            <div class="relative w-full aspect-square max-w-[360px] mx-auto bg-slate-950 rounded-xl overflow-hidden border-2 border-slate-800 flex items-center justify-center shadow-inner">
                 <!-- Idle State UI -->
                 <div id="webcam-placeholder" class="absolute z-10 text-center p-6 transition-all duration-300">
                     <div class="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-3 border border-slate-800 text-slate-400 text-lg">🔒</div>
                     <p class="text-sm font-medium text-slate-400">Camera Access Required</p>
-                    <p class="text-xs text-slate-500 mt-1">Initialize the system to start monitoring</p>
+                    <p class="text-xs text-slate-500 mt-1">Click below to grant camera permission</p>
                 </div>
                 <!-- Active Video Element Wrapper -->
-                <div id="webcam-container" class="w-full h-full [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-cover scale-x-[-1]"></div>
+                <div id="webcam-container" class="w-full h-full"></div>
             </div>
 
             <!-- Action Trigger Button -->
             <button type="button" onclick="init()" id="btn-start" class="mt-6 w-full max-w-[360px] mx-auto flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-[0.99]">
-                Initialize System
+                Start Camera & AI System
             </button>
 
             <!-- 3-Minute Interval Progress UI -->
             <div id="timer-container" class="mt-6 w-full max-w-[360px] mx-auto border-t border-slate-800/80 pt-4 hidden">
                 <div class="flex justify-between text-xs font-medium mb-2">
                     <span class="text-slate-400 flex items-center gap-1">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span> Next Scan In
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span> Next Analysis In
                     </span>
                     <span id="timer-text" class="text-indigo-400 font-mono tracking-wider font-semibold">03:00</span>
                 </div>
@@ -78,13 +85,13 @@
             <!-- Prediction Results Card -->
             <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm shadow-xl flex-grow">
                 <h2 class="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2 uppercase tracking-wider">
-                    <span>📊</span> Probability Metrics
+                    <span>📊</span> Probability Metrics (Updates every 3 mins)
                 </h2>
                 
                 <!-- This container updates via JavaScript -->
                 <div id="label-container" class="space-y-4">
                     <div class="text-slate-500 text-sm italic text-center py-12 border border-dashed border-slate-800 rounded-xl">
-                        Awaiting device activation to display inference analytics.
+                        Awaiting system activation to display inference analytics.
                     </div>
                 </div>
             </div>
@@ -94,8 +101,8 @@
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span> System Audit Log
                 </h3>
-                <div id="log-container" class="bg-slate-950 rounded-xl p-3 text-xs font-mono text-cyan-400/90 h-28 overflow-y-auto space-y-1 border border-slate-800 scrollbar-none">
-                    [System] Awaiting trigger...
+                <div id="log-container" class="bg-slate-950 rounded-xl p-3 text-xs font-mono text-cyan-400/90 h-28 overflow-y-auto space-y-1 border border-slate-800">
+                    [System] Awaiting interface initialization...
                 </div>
             </div>
             
@@ -105,15 +112,15 @@
 
     <!-- Footer Information -->
     <footer class="border-t border-slate-900 py-4 text-center text-xs text-slate-600 font-medium">
-        Engineered with TensorFlow.js Core & Teachable Machine Layers
+        Engineered with TensorFlow.js Core & Teachable Machine Layers[cite: 3]
     </footer>
 
-    <!-- Dependency Scripts -->
+    <!-- Dependency Scripts[cite: 3] -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script type="text/javascript">
-        // ลิงก์โมเดลต้นฉบับจากความต้องการของคุณ[cite: 3]
+        // ลิงก์โมเดลต้นฉบับของคุณ[cite: 3]
         const URL = "https://teachablemachine.withgoogle.com/models/35rqnpNe-e/";
         let model, webcam, labelContainer, maxPredictions;
         
@@ -134,11 +141,7 @@
         async function init() {
             const startBtn = document.getElementById("btn-start");
             startBtn.disabled = true;
-            startBtn.innerHTML = `
-                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg> Connecting Model...`;
+            startBtn.innerHTML = `Loading System...`;
 
             try {
                 const modelURL = URL + "model.json";[cite: 3]
@@ -148,26 +151,26 @@
                 model = await tmImage.load(modelURL, metadataURL);[cite: 3]
                 maxPredictions = model.getTotalClasses();[cite: 3]
 
-                // จัดการโครงสร้างกล้องเว็บแคม[cite: 3]
+                // แก้ไขจุดนี้: บังคับใช้ขนาดมาตรฐาน 200x200 ตามไลบรารีเพื่อไม่ให้เว็บแคมพัง[cite: 3]
                 const flipSetting = true;[cite: 3]
-                webcam = new tmImage.Webcam(360, 360, flipSetting);[cite: 3]
-                await webcam.setup();[cite: 3]
+                webcam = new tmImage.Webcam(200, 200, flipSetting); // ใช้ค่าฟิกซ์ดั้งเดิมป้องกันการเปิดกล้องไม่ได้[cite: 3]
+                await webcam.setup(); // ขอสิทธิ์และเปิดกล้อง[cite: 3]
                 await webcam.play();[cite: 3]
                 
-                // สลับสับเปลี่ยน Element การแสดงผลกล้องบนหน้าเว็บ
+                // สลับการแสดงผลหน้าจอ
                 document.getElementById("webcam-placeholder").classList.add("hidden");
                 document.getElementById("webcam-container").appendChild(webcam.canvas);[cite: 3]
                 
-                // สร้าง Component แถบ Progress Bar เพื่อแสดงผลความแม่นยำแยกแต่ละคลาส
+                // สร้าง Component แถบ Progress Bar สวยงาม
                 labelContainer = document.getElementById("label-container");[cite: 3]
                 labelContainer.innerHTML = "";
                 
                 for (let i = 0; i < maxPredictions; i++) {[cite: 3]
                     const card = document.createElement("div");
-                    card.className = "bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 hover:border-slate-700/60 transition-colors";
+                    card.className = "bg-slate-950/60 p-4 rounded-xl border border-slate-800/80";
                     card.innerHTML = `
                         <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-semibold text-sm text-slate-300 item-label">Analysing Class...</span>
+                            <span class="font-semibold text-sm text-slate-300 item-label">Analysing...</span>
                             <span class="font-mono text-xs font-bold text-cyan-400 item-percentage">0.0%</span>
                         </div>
                         <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
@@ -178,18 +181,17 @@
                 }
 
                 // อัปเดตสถานะปุ่มและป้ายกำกับระบบ
-                const badge = document.getElementById("status-badge");
-                badge.className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-                badge.innerText = "Status: Monitoring";
+                document.getElementById("status-badge").className = "px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                document.getElementById("status-badge").innerText = "Status: Active";
 
                 startBtn.className = "mt-6 w-full max-w-[360px] mx-auto text-center py-3 px-6 rounded-xl bg-slate-900 text-slate-600 font-medium border border-slate-800/80 cursor-not-allowed";
-                startBtn.innerText = "Core Operational";
+                startBtn.innerText = "System Monitoring Running";
 
-                // เริ่มเรียกอนิเมชันสำหรับ Live Stream กล้องบนจอ[cite: 3]
+                // เริ่มลูปรันภาพสดของกล้อง[cite: 3]
                 window.requestAnimationFrame(loop);[cite: 3]
                 
-                // สั่งประมวลผลทันทีในครั้งแรกที่เปิดระบบ และสั่งตัวนับถอยหลัง 3 นาทีให้เริ่มนับ
-                appendLog("Neural Network loaded successfully.");
+                // รันวิเคราะห์ครั้งแรกทันที และเปิดตัวนับถอยหลัง 3 นาที
+                appendLog("Model and Hardware successfully linked.");
                 triggerEvaluation();
                 initiateCountdown();
                 
@@ -197,18 +199,20 @@
 
             } catch (err) {
                 console.error(err);
-                appendLog("Error during initialization: " + err.message);
-                alert("ระบบขัดข้อง: ไม่สามารถเปิดใช้งานเว็บแคมหรือดาวน์โหลดโมเดลได้สำเร็จ");
+                appendLog("Error: " + err.message);
+                startBtn.disabled = false;
+                startBtn.innerText = "Retry Connection";
+                alert("เปิดกล้องไม่ได้! กรุณาตรวจสอบว่าคุณได้กด 'Allow/อนุญาต' ให้เว็บเข้าถึงกล้อง และไม่มีโปรแกรมอื่นเปิดกล้องค้างไว้ครับ");
             }
         }
 
         // ลูปดึงภาพสดของกล้องมาวาดซ้ำเพื่อความลื่นไหลระดับ Real-time[cite: 3]
         async function loop() {
-            webcam.update();[cite: 3]
+            webcam.update(); // อัปเดตเฉพาะภาพบนจอให้ไหลลื่น[cite: 3]
             window.requestAnimationFrame(loop);[cite: 3]
         }
 
-        // ฟังก์ชันสแนปช็อตภาพและยิงตรวจสอบคลาสด้วยโมเดล AI[cite: 3]
+        // ฟังก์ชันส่งภาพปัจจุบันเข้าโมเดล AI เพื่อทำนายผล[cite: 3]
         async function predict() {
             if (!model || !webcam) return;
             
@@ -220,16 +224,15 @@
                 const value = prediction[i].probability;[cite: 3]
                 const computedPercent = (value * 100).toFixed(1);
                 
-                // จัดการอัปเดตข้อมูลตัวเลขลงบล็อก
+                // อัปเดตข้อมูลตัวเลขเปอร์เซ็นต์
                 items[i].querySelector(".item-label").innerText = name;
                 items[i].querySelector(".item-percentage").innerText = `${computedPercent}%`;
                 
-                // จัดการยืดหดแถบ Progress Bar คราม-ฟ้า
+                // ปรับความยาวและสีของแท่งความมั่นใจ
                 const bar = items[i].querySelector(".item-progress-bar");
                 bar.style.width = `${computedPercent}%`;
                 
-                // เปลี่ยนเฉดสีของแท่งอัตโนมัติตามความน่าจะเป็นเพื่อความเด่นชัด
-                if (value > 0.75) {
+                if (value > 0.70) {
                     bar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-300";
                 } else if (value > 0.40) {
                     bar.className = "bg-gradient-to-r from-indigo-500 to-cyan-400 h-full transition-all duration-300";
@@ -241,12 +244,12 @@
 
         // ฟังก์ชันสั่งงานรอบการคำนวณและเก็บ Log
         async function triggerEvaluation() {
-            appendLog("Capture snapshot -> Analyzing frame...");
+            appendLog("Capturing snapshot... AI analyzing frame.");
             await predict();[cite: 3]
-            appendLog("Inference completed. UI state refreshed.");
+            appendLog("Inference completed. Results refreshed.");
         }
 
-        // ระบบตัวจับเวลาถอยหลังและเรียกฟังก์ชันวิเคราะห์ซ้ำทุกๆ 3 นาที
+        // ระบบตัวจับเวลาถอยหลัง 3 นาที
         function initiateCountdown() {
             if (clockTimer) clearInterval(clockTimer);
             
@@ -256,21 +259,19 @@
             clockTimer = setInterval(() => {
                 countdownTime--;
                 
-                // แปลงวินาทีเป็นฟอร์แมตนาฬิกา mm:ss
                 const min = Math.floor(countdownTime / 60);
                 const sec = countdownTime % 60;
                 labelText.innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
                 
-                // ปรับความยาวของหลอดเวลาสี Indigo ลดหลั่นลงไปตามเสี้ยววินาที
                 const ratioLeft = (countdownTime / REFRESH_INTERVAL) * 100;
                 visualBar.style.width = `${ratioLeft}%`;
                 
-                // เมื่อนาฬิกานับมาถึงจุดสิ้นสุดครบรอบ 3 นาทีพอดี (0 วินาที)
+                // เมื่อวนครบรอบ 3 นาที
                 if (countdownTime <= 0) {
-                    triggerEvaluation(); // สั่งยิงข้อมูลภาพไปประมวลผลใหม่
-                    countdownTime = REFRESH_INTERVAL; // ตั้งค่าเวลากลับไปเริ่มต้นรอบ 3 นาทีใหม่ทันที
+                    triggerEvaluation(); // สั่งรัน AI ประมวลผลภาพใหม่
+                    countdownTime = REFRESH_INTERVAL; // เริ่มต้นนับ 3 นาทีรอบใหม่
                 }
-            }, 1000); // ทำการประมวลผลกลไกนาฬิกาทุกๆ 1 วินาที
+            }, 1000);
         }
     </script>
 </body>
